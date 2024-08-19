@@ -1,0 +1,10 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\.github",
+    "\\.github\\workflows",
+    "\\public"
+  ],
+  "SelectedNode": "\\.github\\workflows\\firebase-hosting-merge.yml",
+  "PreviewInSolutionExplorer": false
+}
