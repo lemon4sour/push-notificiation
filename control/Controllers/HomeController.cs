@@ -31,7 +31,7 @@ public class HomeController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> NotifyTopic([FromBody] NotificationRequest request)
+    public async Task<IActionResult> NotifyTopic([FromBody] TopicNotificationRequest request)
     {
         var topicList = request.Topics.Split(',');
 
@@ -64,11 +64,55 @@ public class HomeController : Controller
         return Ok(new { message = "Notifications sent successfully!" });
     }
 
-    public class NotificationRequest
+    public class TopicNotificationRequest
     {
         public string NotificationHeader { get; set; }
         public string NotificationBody { get; set; }
         public string Topics { get; set; }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> NotifyTokens([FromBody] NotificationRequest request)
+    {
+        var tokens = request.Tokens;
+
+        if (tokens == null || tokens.Count == 0)
+        {
+            return BadRequest(new { message = "No tokens provided." });
+        }
+
+        var message = new MulticastMessage()
+        {
+            Notification = new Notification
+            {
+                Title = request.NotificationHeader,
+                Body = request.NotificationBody,
+            },
+            Tokens = tokens,
+        };
+
+        try
+        {
+            var response = await FirebaseMessaging.DefaultInstance.SendMulticastAsync(message);
+
+            if (response.FailureCount > 0)
+            {
+                return Ok(new { message = $"Successfully sent to {response.SuccessCount} tokens, but failed to send to {response.FailureCount} tokens." });
+            }
+
+            return Ok(new { message = "Notifications sent successfully!" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = ex.Message });
+        }
+    }
+
+    public class NotificationRequest
+    {
+        public string NotificationHeader { get; set; }
+        public string NotificationBody { get; set; }
+        public List<string> Tokens { get; set; }
     }
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

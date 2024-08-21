@@ -22,12 +22,12 @@
             <h3>Push Notification</h3>
             <form id="notifyTopicForm">
                 <div class="mb-3">
-                    <label for="notificationHeader" class="form-label">Notification Header</label>
-                    <input type="text" class="form-control bg-secondary text-white border-2" id="notificationHeader" name="notificationHeader" required>
+                    <label for="topic_notificationHeader" class="form-label">Notification Header</label>
+                    <input type="text" class="form-control bg-secondary text-white border-2" id="topic_notificationHeader" name="topic_notificationHeader" required>
                 </div>
                 <div class="mb-3">
-                    <label for="notificationBody" class="form-label">Notification Body</label>
-                    <textarea class="form-control bg-secondary text-white border-2" id="notificationBody" name="notificationBody" rows="3" required></textarea>
+                    <label for="topic_notificationBody" class="form-label">Notification Body</label>
+                    <textarea class="form-control bg-secondary text-white border-2" id="topic_notificationBody" name="topic_notificationBody" rows="3" required></textarea>
                 </div>
                 <div class="mb-3">
                     <label for="topics" class="form-label">Topics</label>
@@ -37,8 +37,8 @@
             </form>
             <script>
                 document.getElementById('submitNotification').addEventListener('click', async function () {
-                    const notificationHeader = document.getElementById('notificationHeader').value;
-                    const notificationBody = document.getElementById('notificationBody').value;
+                    const notificationHeader = document.getElementById('topic_notificationHeader').value;
+                    const notificationBody = document.getElementById('topic_notificationBody').value;
                     const topics = document.getElementById('topics').value;
 
                     const data = {
@@ -75,13 +75,29 @@
 
 <div class="container">
     <h1 class="mt-4">Firebase Tokens</h1>
+
+    <!-- Notification Input Fields -->
+    <div class="mb-3">
+        <label for="notificationHeader" class="form-label">Notification Header</label>
+        <input type="text" class="form-control bg-secondary text-white border-2" id="notificationHeader" required>
+    </div>
+    <div class="mb-3">
+        <label for="notificationBody" class="form-label">Notification Body</label>
+        <textarea class="form-control bg-secondary text-white border-2" id="notificationBody" rows="3" required></textarea>
+    </div>
+
+    <button type="button" class="btn btn-primary mt-3" id="sendNotificationButton">Push</button>
+    
+    <!-- Firebase Tokens List -->
     <ol class="list-group mt-3">
-        @foreach (var kvp in Model)
+        @for (int i = 0; i < Model.Count; i++)
         {
+            var kvp = Model.ElementAt(i);
             <li class="list-group-item d-flex align-items-center text-break" id="@kvp.Key">
-                <input type="checkbox" class="form-check-input me-3" />
+                <input type="checkbox" class="form-check-input me-3" id="checkbox-@i" value="@kvp.Key" />
                 <div class="w-100">
-                    <small class="text-muted">@kvp.Key</small>
+                    <strong>@kvp.Value.name</strong>
+                    <small class="text-muted d-block" style="font-size: 0.7em;">@kvp.Key</small>
                     <div>
                         <strong>@string.Join(", ", kvp.Value.topics)</strong>
                     </div>
@@ -90,7 +106,6 @@
                             string timestampText;
                             try
                             {
-                                // Convert milliseconds to seconds
                                 long seconds = kvp.Value.timestamp / 1000;
                                 timestampText = DateTimeOffset.FromUnixTimeSeconds(seconds).UtcDateTime.ToString("yyyy-MM-dd HH:mm:ss");
                             }
@@ -106,3 +121,46 @@
         }
     </ol>
 </div>
+
+<script>
+    document.getElementById('sendNotificationButton').addEventListener('click', async function () {
+        const notificationHeader = document.getElementById('notificationHeader').value;
+        const notificationBody = document.getElementById('notificationBody').value;
+
+        // Collect all checked checkboxes
+        const checkedTokens = [];
+        document.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+            checkedTokens.push(checkbox.value);
+        });
+
+        if (checkedTokens.length === 0) {
+            document.getElementById('notificationResult').innerHTML = '<div class="alert alert-warning">Please select at least one token.</div>';
+            return;
+        }
+
+        const data = {
+            notificationHeader,
+            notificationBody,
+            tokens: checkedTokens
+        };
+
+        try {
+            const response = await fetch('/Home/NotifyTokens', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                console.log("Notifications sent successfully!");
+            } else {
+                console.log(`Error: ${result.message}`);
+            }
+        } catch (error) {
+            console.log(`Error: ${error.message}`);
+        }
+    });
+</script>
